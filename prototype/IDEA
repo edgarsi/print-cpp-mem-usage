@@ -1,0 +1,49 @@
+IDEA AND FEASIBILITY STUDY
+==========================
+
+Deep size counting of structures and STL containers, to allow memory usage patterns/bugs to be easily visible.
+
+Reason: To catch logical memory leaks such as ever-growing std::map instances. Not intended to be universal.
+Intended to be helpful in many cases.
+
+Command print-cpp-mem-usage. Receive an argument 'var'. Create a graph of known variables starting with 'var',
+with directional edges to children. Understand STL variable specifics enough to assess typical heap memory usage
+of STL object instances. The size of shared children is split among parents, although it will be confusing that
+a size of variable depends on other variables being traversed. Heap memory not allocated in STL objects is not 
+counted. Output "? unknown" if pointers are used to clue on this, explaining details in "--help".
+
+!!! I seriously doubt that GDB policy allows for a heuristic approaches to memory counting such as this, as this
+is most likely the reason why noone has written this tool yet. I must look for a plugin approach or resort
+to using GBD API from a command line tool, if such a thing is possible without forcing the user to detach. 
+GDB has a great Python API, I found difficult to notice in Google... 
+https://sourceware.org/gdb/current/onlinedocs/gdb/Python-API.html
+Github has examples for reference. I suggest GDB heap.
+
+print-cpp-mem-usage <var [+]<var>..|frame> [-<exclude>..] [depth <<depth>|inf>]
+Memory use of <var..> traversed up to depth <depth>. [Excluding <exclude..>.]
+	member_x (99%) = ~34K self + ~180K shared + ? unknown
+	member_y (1%) = 697 self
+
+The argument-less call is equivalent to:
+cpp-mem-usage * depth inf
+(note that search includes variables which are not in scope)
+
+Why not count pointers to all heap allocated object?
+The pointer approach is unfeasible.
+http://thomas-zimmermann.com/publications/files/zimmermann-memgraphs-2001.pdf
+Look up "Dealing with C data structures" - invalid pointers, (weird) dynamic arrays, unions.
+
+GDB source change ideas (Useless, as such won't be accepted)
+info address
+maint print address
+maint print type expr
+(!)print <- abuse this!
+(!)ptype
+(!)info variables
+info address
+
+MI ideas (Unless, as Python API is superior)
+-var-list-children
+-var-info-type
+I do not see a way to list all variables other than invoking CLI.
+
